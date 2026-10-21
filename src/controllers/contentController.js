@@ -196,3 +196,36 @@ export const addChecklistItem = async (req, res) => {
     }
 };
 
+//catat log snapshot performa konten
+export const snapshotMetrics = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { views_count, likes_count, comments_count, shares_count } = req.body;
+
+        if (views_count === undefined || likes_count === undefined || comments_count === undefined || shares_count === undefined || views_count === null || likes_count === null || comments_count === null || shares_count === null || isNaN(views_count) || isNaN(likes_count) || isNaN(comments_count) || isNaN(shares_count)) {
+            return res.status(400).json({
+                status: false,
+                message: "Missing required fields"
+            });
+        }
+
+        const [metrics] = await pool.query("INSERT INTO content_metrics (content_id, views_count, likes_count, comments_count, shares_count) VALUES(?,?,?,?,?)",[id, views_count, likes_count, comments_count, shares_count])
+
+        return res.status(201).json({
+            status: true,
+            message: "Metrics successfully recorded",
+            data: {
+                views_count,
+                likes_count,
+                comments_count,
+                shares_count
+            }
+        })
+
+    } catch(error) {
+        return res.status(500).json({
+            status: false,
+            message: error.message
+        })
+    }
+}
