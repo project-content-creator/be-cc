@@ -46,6 +46,41 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\":\"Aira\",\r\n    \"email\":\"aira@gmail.com\",\r\n    \"password\": \"admin456\",\r\n    \"role\":\"editor\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local}}/user",
+              "host": [
+                "{{local}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -409,6 +444,51 @@
           "response": []
         },
         {
+          "name": "Read All with Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local}}/content?status&channel_id",
+              "host": [
+                "{{local}}"
+              ],
+              "path": [
+                "content"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "channel_id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Read 1 by ID",
           "request": {
             "method": "GET",
@@ -480,6 +560,43 @@
           "response": []
         },
         {
+          "name": "Add Checklist Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"task_name\": \"brainstorming\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local}}/content/2/checklists",
+              "host": [
+                "{{local}}"
+              ],
+              "path": [
+                "content",
+                "2",
+                "checklists"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Update Status by ID",
           "request": {
             "method": "PUT",
@@ -514,12 +631,61 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Snapshot Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "New Folder",
-      "item": []
+      "name": "Checklist",
+      "item": [
+        {
+          "name": "Toggle Item Checklist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"task_name\": \"brainstorming\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local}}/content/2/checklists",
+              "host": [
+                "{{local}}"
+              ],
+              "path": [
+                "content",
+                "2",
+                "checklists"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
