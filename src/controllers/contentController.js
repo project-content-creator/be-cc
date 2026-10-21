@@ -54,7 +54,7 @@ export const getAllContents = async (req, res) => {
 export const getContentById = async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const [content] = await pool.query("SELECT * FROM contents WHERE id = ?", [id]);
+        const [content] = await pool.query("SELECT * FROM contents INNER JOIN content_checklists ON contents.id = content_checklists.content_id INNER JOIN content_metrics ON contents.id = content_metrics.content_id WHERE contents.id = ?", [id]);
         if (content.length === 0 || content[0].id !== id) {
             return res.status(404).json({
                 status: false,
