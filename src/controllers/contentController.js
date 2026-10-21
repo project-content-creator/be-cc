@@ -140,6 +140,36 @@ export const updateContentStatus = async (req, res) => {
     }
 };
 
+//menambah item checklist pada id
+export const addChecklistItem = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { task_name } = req.body;
+        if (!task_name) {
+            return res.status(400).json({
+                status: false,
+                message: "Missing required field: task_name"
+            });
+        }
+        const [checklistItem] = await pool.query("INSERT INTO content_checklists (content_id, task_name) VALUES (?, ?)", [id, task_name]);
+        return res.status(201).json({
+            status: true,
+            message: "Checklist item added successfully",
+            data: {
+                id: checklistItem.insertId,
+                content_id: id,
+                task_name
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+};
+
 //delete content
 export const deleteContent = async (req, res) => {
     try {
@@ -152,7 +182,7 @@ export const deleteContent = async (req, res) => {
             });
         }
         await pool.query("DELETE FROM contents WHERE id = ?", [id]);
-        return res.status(200).json({
+        return res.status(204).json({
             status: true,
             message: "Content deleted successfully"
         });
