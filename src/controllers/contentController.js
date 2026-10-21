@@ -140,6 +140,32 @@ export const updateContentStatus = async (req, res) => {
     }
 };
 
+
+//delete content
+export const deleteContent = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const [existingContent] = await pool.query("SELECT id FROM contents WHERE id = ?", [id]);
+        if (existingContent.length === 0 || existingContent[0].id !== id) {
+            return res.status(404).json({
+                status: false,
+                message: "Content not found"
+            });
+        }
+        await pool.query("DELETE FROM contents WHERE id = ?", [id]);
+        return res.status(204).json({
+            status: true,
+            message: "Content deleted successfully"
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+};
+
 //menambah item checklist pada id
 export const addChecklistItem = async (req, res) => {
     try {
@@ -170,27 +196,3 @@ export const addChecklistItem = async (req, res) => {
     }
 };
 
-//delete content
-export const deleteContent = async (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const [existingContent] = await pool.query("SELECT id FROM contents WHERE id = ?", [id]);
-        if (existingContent.length === 0 || existingContent[0].id !== id) {
-            return res.status(404).json({
-                status: false,
-                message: "Content not found"
-            });
-        }
-        await pool.query("DELETE FROM contents WHERE id = ?", [id]);
-        return res.status(204).json({
-            status: true,
-            message: "Content deleted successfully"
-        });
-    } catch (error) {
-        return res.status(500).json({
-            status: false,
-            message: "Internal Server Error",
-            error: error.message
-        });
-    }
-};

@@ -7,6 +7,6 @@ router.get("/:id", getContentById);
 router.post("/", createContent);
 router.put("/:id", updateContentStatus);
 router.delete("/:id", deleteContent);
-router.post("/:id/checklist", addChecklistItem);
+router.post("/:id/checklists", addChecklistItem);
 
 export default router;
