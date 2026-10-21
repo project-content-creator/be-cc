@@ -3,16 +3,42 @@ import pool from "../config/db.js";
 //get all contents
 export const getAllContents = async (req, res) => {
     try {
-        const [existingContents] = await pool.query("SELECT * FROM contents");
-        if (existingContents.length === 0) {
+        //ambil query params untuk filter status dan channel_id
+        const { status, channel_id } = req.query;
+
+        //define query dasar
+        let query = "SELECT * FROM contents";
+        let queryParams = [];
+
+        //susun query berdasarkan filter
+        if (status && channel_id) {
+            query += " WHERE status = ? AND channel_id = ?";
+            queryParams = [status, channel_id];
+        }
+        else if (status) {
+            query += " WHERE status = ?";
+            queryParams = [status];
+        }
+        else if (channel_id) {
+            query += " WHERE channel_id = ?";
+            queryParams = [channel_id];
+        }
+
+        //ambil data dari database
+        const [filteredContents] = await pool.query(query, queryParams);
+
+        //validasi hasil query
+        if (filteredContents.length === 0) {
             return res.status(404).json({
                 status: false,
-                message: "No contents found"
+                message: "No contents found with the specified filters"
             });
         }
+
+        //tampilkan hasil query
         return res.status(200).json({
             status: true,
-            data: existingContents
+            data: filteredContents
         });
     } catch (error) {
         console.error(error);
