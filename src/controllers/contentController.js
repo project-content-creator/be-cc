@@ -7,7 +7,7 @@ export const getAllContents = async (req, res) => {
         const { status, channel_id } = req.query;
 
         //define query dasar
-        let query = "SELECT * FROM contents";
+        let query = "SELECT contents.*, channels.platform AS platform, channels.handle_name AS handle_name FROM contents LEFT JOIN channels ON contents.channel_id = channels.id";
         let queryParams = [];
 
         //susun query berdasarkan filter
@@ -77,7 +77,7 @@ export const getContentById = async (req, res) => {
 //create content
 export const createContent = async (req, res) => {
     try {
-        const {user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date, published_date, published_url} = req.body
+        const {user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date} = req.body
         if (!user_id || !channel_id || !title || !description || !script_draft || !format_type || !status || !priority) {
             return res.status(400).json({
                 status: false,
@@ -85,7 +85,7 @@ export const createContent = async (req, res) => {
             });
         }
     
-        const [content] = await pool.query("INSERT INTO contents (user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date, published_date, published_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date || null, published_date || null, published_url || null]);
+        const [content] = await pool.query("INSERT INTO contents (user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date || null]);
     
         return res.status(201).json({
             status: true,
@@ -100,9 +100,7 @@ export const createContent = async (req, res) => {
                 format_type,
                 status,
                 priority,
-                scheduled_date,
-                published_date,
-                published_url
+                scheduled_date
             }
         });
     } catch (error) {
@@ -119,13 +117,20 @@ export const createContent = async (req, res) => {
 export const updateContentStatus = async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const { status } = req.body;
+        const { status, published_url } = req.body;
         if (!status) {
             return res.status(400).json({
                 status: false,
                 message: "Missing required field: status"
             });
-        }
+        } else 
+            if (status === "published" && published_url) {
+                await pool.query("UPDATE contents SET status=?, published_url =? WHERE id=?", [status, published_url, id])
+                return res.status(200).json({
+                    status: true,
+                    message: "Content status and published url updated successfully"
+                })
+            }
         await pool.query("UPDATE contents SET status = ? WHERE id = ?", [status, id]);
         return res.status(200).json({
             status: true,

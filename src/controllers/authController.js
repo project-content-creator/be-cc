@@ -35,6 +35,7 @@ try {
     id: dataUser.id,
     name: dataUser.name,
     email: dataUser.email,
+    role: dataUser.role
     }, 
     process.env.JWT_SECRET,
     {expiresIn: process.env.JWT_EXPIRES_IN || '1D'},
@@ -47,6 +48,7 @@ try {
             id: dataUser.id,
             name: dataUser.name,
             email: dataUser.email,
+            role: dataUser.role
       },
       token,
     },

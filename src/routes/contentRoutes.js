@@ -5,7 +5,7 @@ const router = Router();
 router.get("/", getAllContents);
 router.get("/:id", getContentById);
 router.post("/", createContent);
-router.put("/:id", updateContentStatus);
+router.patch("/:id", updateContentStatus);
 router.delete("/:id", deleteContent);
 router.post("/:id/checklists", addChecklistItem);
 router.post("/:id/metrics", snapshotMetrics)
