@@ -30,8 +30,13 @@ try {
     id: dataUser.id,
     name: dataUser.name,
     email: dataUser.email,
+<<<<<<< HEAD
     role: dataUser.role,
     },
+=======
+    role: dataUser.role
+    }, 
+>>>>>>> 6a66ee81024269227810225b8fa1a3209dac728f
     process.env.JWT_SECRET,
     {expiresIn: process.env.JWT_EXPIRES_IN || '1d'},
     )
@@ -43,7 +48,11 @@ try {
             id: dataUser.id,
             name: dataUser.name,
             email: dataUser.email,
+<<<<<<< HEAD
             role: dataUser.role,
+=======
+            role: dataUser.role
+>>>>>>> 6a66ee81024269227810225b8fa1a3209dac728f
       },
       token,
     },

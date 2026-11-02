@@ -12,10 +12,57 @@ const FIELDS_BY_ROLE = {
 
 const isHttpUrl = (value) => {
     try {
+<<<<<<< HEAD
         const url = new URL(value);
         return url.protocol === "http:" || url.protocol === "https:";
     } catch {
         return false;
+=======
+        //ambil query params untuk filter status dan channel_id
+        const { status, channel_id } = req.query;
+
+        //define query dasar
+        let query = "SELECT contents.*, channels.platform AS platform, channels.handle_name AS handle_name FROM contents LEFT JOIN channels ON contents.channel_id = channels.id";
+        let queryParams = [];
+
+        //susun query berdasarkan filter
+        if (status && channel_id) {
+            query += " WHERE status = ? AND channel_id = ?";
+            queryParams = [status, channel_id];
+        }
+        else if (status) {
+            query += " WHERE status = ?";
+            queryParams = [status];
+        }
+        else if (channel_id) {
+            query += " WHERE channel_id = ?";
+            queryParams = [channel_id];
+        }
+
+        //ambil data dari database
+        const [filteredContents] = await pool.query(query, queryParams);
+
+        //validasi hasil query
+        if (filteredContents.length === 0) {
+            return res.status(404).json({
+                status: false,
+                message: "No contents found with the specified filters"
+            });
+        }
+
+        //tampilkan hasil query
+        return res.status(200).json({
+            status: true,
+            data: filteredContents
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+>>>>>>> 6a66ee81024269227810225b8fa1a3209dac728f
     }
 };
 
@@ -107,6 +154,7 @@ export const getContentById = async (req, res) => {
 //create content (admin, creator): pemilik = user yang login, status awal selalu "idea"
 export const createContent = async (req, res) => {
     try {
+<<<<<<< HEAD
         const body = req.body ?? {};
         const data = {
             channel_id: body.channel_id,
@@ -128,6 +176,67 @@ export const createContent = async (req, res) => {
         );
         const created = await findContent(result.insertId);
         return res.status(201).json({ status: true, message: "Content created successfully", data: created });
+=======
+        const {user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date} = req.body
+        if (!user_id || !channel_id || !title || !description || !script_draft || !format_type || !status || !priority) {
+            return res.status(400).json({
+                status: false,
+                message: "Missing required fields"
+            });
+        }
+    
+        const [content] = await pool.query("INSERT INTO contents (user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [user_id, channel_id, title, description, script_draft, format_type, status, priority, scheduled_date || null]);
+    
+        return res.status(201).json({
+            status: true,
+            message: "Content created successfully",
+            data: {
+                id: content.insertId,
+                user_id,
+                channel_id,
+                title,
+                description,
+                script_draft,
+                format_type,
+                status,
+                priority,
+                scheduled_date
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+    }
+
+}
+
+//update status content
+export const updateContentStatus = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { status, published_url } = req.body;
+        if (!status) {
+            return res.status(400).json({
+                status: false,
+                message: "Missing required field: status"
+            });
+        } else 
+            if (status === "published" && published_url) {
+                await pool.query("UPDATE contents SET status=?, published_url =? WHERE id=?", [status, published_url, id])
+                return res.status(200).json({
+                    status: true,
+                    message: "Content status and published url updated successfully"
+                })
+            }
+        await pool.query("UPDATE contents SET status = ? WHERE id = ?", [status, id]);
+        return res.status(200).json({
+            status: true,
+            message: "Content status updated successfully"
+        });
+>>>>>>> 6a66ee81024269227810225b8fa1a3209dac728f
     } catch (error) {
         return serverError(res, error);
     }
