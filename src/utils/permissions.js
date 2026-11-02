@@ -13,8 +13,8 @@ const VISIBLE = {
 };
 
 // Status tujuan yang boleh DIPILIH tiap role saat memindahkan konten.
-// - creator boleh menyerahkan konten ke editor (recording -> editing).
-// - hanya admin yang boleh memilih "published".
+// creator boleh menyerahkan konten ke editor (recording -> editing).
+// hanya admin yang boleh memilih "published".
 const ASSIGNABLE = {
   admin: STATUSES,
   creator: ["idea", "scripting", "recording", "editing"],

@@ -8,37 +8,41 @@ const fail = (res, status, message, errors) =>
 
 export const login = async(req, res) => {
 try {
-   const { email, password } = req.body ?? {};
+   const { email, password } = req.body;
 
    if (!email || !password) {
-    return fail(res, 400, "Email and password required");
+    return res.status(400).json({
+        status: false,
+        message: "Email and password required",
+    });
    }
 
-   const [user] = await pool.query("SELECT id, name, email, password_hash, role FROM users WHERE email = ?", [email])
+   const [user] = await pool.query("SELECT id, name, email, password_hash, role FROM users WHERE email =?", [email])
 
    if (user.length === 0) {
-    return fail(res, 401, "Invalid credential");
+    return res.status(401).json({
+        status: false,
+        message: "Invalid credential"
+        })
     }
     const dataUser = user[0];
     const isMatch = await bcrypt.compare(password, dataUser.password_hash);
 
     if (!isMatch) {
-      return fail(res, 401, "Invalid credential"); //401:unauthorized /login gagal
+    return res.status(401).json({
+      status: false,
+      message: "Invalid credential", //401:unauthorized /login gagal
+        });
     }
     const token = jwt.sign(
     {
     id: dataUser.id,
     name: dataUser.name,
     email: dataUser.email,
-<<<<<<< HEAD
-    role: dataUser.role,
-    },
-=======
     role: dataUser.role
     }, 
->>>>>>> 6a66ee81024269227810225b8fa1a3209dac728f
     process.env.JWT_SECRET,
-    {expiresIn: process.env.JWT_EXPIRES_IN || '1d'},
+    {expiresIn: process.env.JWT_EXPIRES_IN || '1D'},
     )
     return res.status(200).json({
         status: true,
@@ -48,22 +52,22 @@ try {
             id: dataUser.id,
             name: dataUser.name,
             email: dataUser.email,
-<<<<<<< HEAD
-            role: dataUser.role,
-=======
             role: dataUser.role
->>>>>>> 6a66ee81024269227810225b8fa1a3209dac728f
       },
       token,
     },
   });
 } catch (error) {
+    // Tambahkan try-catch agar jika database error, aplikasinya tidak langsung mati/crash
     console.error(error);
-    return fail(res, 500, "Internal Server Error");
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message
+    });
   }
 };
 
-// Pendaftaran publik: role SELALU "creator". Admin/editor dibuat oleh admin lewat POST /user.
 export const register = async(req, res) => {
   try {
     const body = req.body ?? {};
@@ -73,28 +77,39 @@ export const register = async(req, res) => {
     const name = body.name.trim();
     const email = body.email.trim();
 
-    const [existingUser] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
-    if (existingUser.length > 0) {
-      return fail(res, 409, "Email already taken");
+    //cek apakah email sudah ada di database
+        const [existingUser] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+        if (existingUser.length > 0) {
+            return res.status(409).json({
+                status: false,
+                message: "Email already taken"
+            });
+        }
+        
+        //cek apakah semua field sudah diisi
+        if (!name || !email || !password || !role) {
+            return res.status(400).json({
+                status: false,
+                message: "All fields are required"
+            });
+        }
+        //hash password sebelum disimpan ke database
+        const password_hash = await bcrypt.hash(password, 10);
+        const [result] = await pool.query("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'creator')", [name, email, password_hash]);
+        return res.status(201).json({
+            status: true,
+            message: "User created successfully",
+            data: { id: result.insertId, name, email, role: "creator" }
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
     }
-
-    const password_hash = await bcrypt.hash(body.password, 10);
-    const [result] = await pool.query(
-      "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'creator')",
-      [name, email, password_hash]
-    );
-    return res.status(201).json({
-      status: true,
-      message: "User registered successfully",
-      data: { id: result.insertId, name, email, role: "creator" }
-    });
-  } catch (error) {
-    console.error(error);
-    return fail(res, 500, "Internal Server Error");
-  }
 }
 
-// Data user yang sedang login (dipakai frontend untuk menyegarkan role)
 export const me = async (req, res) => {
   return res.status(200).json({ status: true, data: req.user });
 }
