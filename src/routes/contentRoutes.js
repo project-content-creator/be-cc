@@ -14,9 +14,10 @@ const router = Router();
 router.get("/", getAllContents);
 router.get("/:id", getContentById);
 router.post("/", requireRole("admin", "creator"), createContent);
+router.put("/:id", updateContentStatus);
 router.patch("/:id", updateContentStatus);
 router.delete("/:id", requireRole("admin", "creator"), deleteContent);
 router.post("/:id/checklists", addChecklistItem);
-router.post("/:id/metrics", requireRole("admin"), snapshotMetrics)
+router.post("/:id/metrics", requireRole("admin"), snapshotMetrics);
 
 export default router;

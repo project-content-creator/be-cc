@@ -42,9 +42,9 @@ export function visibilityClause(user) {
   if (statuses.length === 0) return { sql: "1 = 0", params: [] };
   const marks = statuses.map(() => "?").join(", ");
   if (user.role === "creator") {
-    return { sql: `status IN (${marks}) AND user_id = ?`, params: [...statuses, user.id] };
+    return { sql: `contents.status IN (${marks}) AND contents.user_id = ?`, params: [...statuses, user.id] };
   }
-  return { sql: `status IN (${marks})`, params: statuses };
+  return { sql: `contents.status IN (${marks})`, params: statuses };
 }
 
 export const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD (zona waktu server)
