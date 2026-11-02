@@ -10,7 +10,9 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Kolom DATE dikirim sebagai teks "YYYY-MM-DD" agar tanggal tidak bergeser karena zona waktu.
+  dateStrings: ["DATE"],
 });
 
 async function testConnection() {

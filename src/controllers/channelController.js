@@ -1,28 +1,40 @@
 import pool from "../config/db.js";
+import { PLATFORMS } from "../utils/permissions.js";
 
-//get all channels
+const fail = (res, status, message, errors) =>
+    res.status(status).json({ status: false, message, ...(errors && { errors }) });
+
+const serverError = (res, error) => {
+    console.error(error);
+    return fail(res, 500, "Internal Server Error");
+};
+
+const SELECT_CHANNEL = `
+    SELECT ch.id, ch.user_id, ch.platform, ch.handle_name, ch.created_at,
+           u.name AS owner_name,
+           (SELECT COUNT(*) FROM contents c WHERE c.channel_id = ch.id) AS contents_count
+    FROM channels ch
+    LEFT JOIN users u ON u.id = ch.user_id`;
+
+function validateChannel(body) {
+    const errors = {};
+    const handle = typeof body.handle_name === "string" ? body.handle_name.trim() : "";
+    if (!PLATFORMS.includes(body.platform)) errors.platform = ["Platform tidak valid"];
+    if (!handle) errors.handle_name = ["Handle wajib diisi"];
+    else if (handle.length > 100) errors.handle_name = ["Handle maksimal 100 karakter"];
+    return { errors: Object.keys(errors).length ? errors : null, handle };
+}
+
+const canManage = (user, channel) =>
+    user.role === "admin" || (user.role === "creator" && Number(channel.user_id) === Number(user.id));
+
+//get all channels: semua role boleh melihat semua channel
 export const getAllChannels = async (req, res) => {
     try {
-        const [existingChannels] = await pool.query("SELECT * FROM channels");
-        if (existingChannels.length === 0) {
-            return res.status(404).json({
-                status: false,
-                message: "No channels found"
-            });
-        }
-        const [channels] = await pool.query("SELECT id, user_id, platform, handle_name, created_at FROM channels");
-        return res.status(200).json({
-            status: true,
-            message: "Channels retrieved successfully",
-            data: channels
-        });
+        const [channels] = await pool.query(`${SELECT_CHANNEL} ORDER BY ch.id`);
+        return res.status(200).json({ status: true, message: "Channels retrieved successfully", data: channels });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            status: false,
-            message: "Internal Server Error",
-            error: error.message
-        });
+        return serverError(res, error);
     }
 };
 
@@ -30,115 +42,69 @@ export const getAllChannels = async (req, res) => {
 export const getChannelById = async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const [channel] = await pool.query("SELECT * FROM channels WHERE id = ?", [id]);
-        if (channel.length === 0) {
-            return res.status(404).json({
-                status: false,
-                message: "Channel not found"
-            });
-        }
-        return res.status(200).json({
-            status: true,
-            message: "Channel retrieved successfully",
-            data: channel
-        });
+        const [rows] = await pool.query(`${SELECT_CHANNEL} WHERE ch.id = ?`, [id]);
+        if (rows.length === 0) return fail(res, 404, "Channel not found");
+        return res.status(200).json({ status: true, message: "Channel retrieved successfully", data: rows[0] });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            status: false,
-            message: "Internal Server Error",
-            error: error.message
-        });
+        return serverError(res, error);
     }
 };
 
-//create channel
+//create channel: pemilik = user yang login
 export const createChannel = async (req, res) => {
-    const { user_id, platform, handle_name } = req.body;
-    //cek apakah user_id ada di tabel users
-    const [existingUser] = await pool.query("SELECT id FROM users WHERE id = ?", [user_id]);
-    if (existingUser.length === 0) {
-        return res.status(404).json({
-            status: false,
-            message: "User not found"
-        });
-    }
     try {
-        if (!user_id || !platform || !handle_name) {
-            return res.status(400).json({
-                status: false,
-                message: "user_id, platform, and handle_name are required"
-            });
-        }
-        const [channel] = await pool.query("INSERT INTO channels (user_id, platform, handle_name) VALUES (?, ?, ?)", [user_id, platform, handle_name]);
+        const body = req.body ?? {};
+        const { errors, handle } = validateChannel(body);
+        if (errors) return fail(res, 422, "Validation failed", errors);
+
+        const [result] = await pool.query(
+            "INSERT INTO channels (user_id, platform, handle_name) VALUES (?, ?, ?)",
+            [req.user.id, body.platform, handle]
+        );
         return res.status(201).json({
             status: true,
             message: "Channel created successfully",
-            data: {
-                id: channel.insertId,
-                user_id,
-                platform,
-                handle_name
-            }
+            data: { id: result.insertId, user_id: req.user.id, platform: body.platform, handle_name: handle }
         });
     } catch (error) {
-        return res.status(500).json({
-            status: false,
-            message: "Internal Server Error",
-            error: error.message
-        });
+        return serverError(res, error);
     }
-}
+};
 
-//update channel
+//update channel: admin atau pemilik
 export const updateChannel = async (req, res) => {
-    const id = parseInt(req.params.id);
-    const { user_id, platform, handle_name } = req.body;
     try {
-        const [existingChannel] = await pool.query("SELECT id FROM channels WHERE id = ?", [id]);
-        if (existingChannel.length === 0 || existingChannel[0].id !== id) {
-            return res.status(404).json({
-                status: false,
-                message: "Channel not found"
-            });
-        }
-        await pool.query("UPDATE channels SET user_id = ?, platform = ?, handle_name = ? WHERE id = ?", [user_id, platform, handle_name, id]);
+        const id = parseInt(req.params.id);
+        const [rows] = await pool.query("SELECT id, user_id FROM channels WHERE id = ?", [id]);
+        if (rows.length === 0) return fail(res, 404, "Channel not found");
+        if (!canManage(req.user, rows[0])) return fail(res, 403, "Forbidden: bukan channel milikmu");
+
+        const body = req.body ?? {};
+        const { errors, handle } = validateChannel(body);
+        if (errors) return fail(res, 422, "Validation failed", errors);
+
+        await pool.query("UPDATE channels SET platform = ?, handle_name = ? WHERE id = ?", [body.platform, handle, id]);
         return res.status(200).json({
             status: true,
-            message: "Channel updated successfully"
+            message: "Channel updated successfully",
+            data: { id, user_id: rows[0].user_id, platform: body.platform, handle_name: handle }
         });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            status: false,
-            message: "Internal Server Error",
-            error: error.message
-        });
+        return serverError(res, error);
     }
-}
+};
 
-//delete channel
+//delete channel: admin atau pemilik. Konten di channel ini ikut terhapus (ON DELETE CASCADE)
 export const deleteChannel = async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const [existingChannel] = await pool.query("SELECT id FROM channels WHERE id = ?", [id]);
-        if (existingChannel.length === 0 || existingChannel[0].id !== id) {
-            return res.status(404).json({
-                status: false,
-                message: "Channel not found"
-            });
-        }
+        const [rows] = await pool.query("SELECT id, user_id FROM channels WHERE id = ?", [id]);
+        if (rows.length === 0) return fail(res, 404, "Channel not found");
+        if (!canManage(req.user, rows[0])) return fail(res, 403, "Forbidden: bukan channel milikmu");
+
         await pool.query("DELETE FROM channels WHERE id = ?", [id]);
-        return res.status(200).json({
-            status: true,
-            message: "Channel deleted successfully"
-        });
+        return res.status(200).json({ status: true, message: "Channel deleted successfully" });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            status: false,
-            message: "Internal Server Error",
-            error: error.message
-        });
+        return serverError(res, error);
     }
-}
+};
